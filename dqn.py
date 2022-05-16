@@ -8,9 +8,13 @@ from keras.optimizers import adam_v2
 
 from collections import deque
 
+import time
+import os.path
+
 class DQN(object):
-    def __init__(self, num_episodes = 500, num_steps = 200, min_explore = 0.01, lr = 0.001, discount = 0.95, batch_size = 32, decay = 0.995):
-        self.env = gym.make('BreakoutDeterministic-v4')
+    def __init__(self, num_episodes = 1000, num_steps = 200, min_explore = 0.01, lr = 0.001, discount = 0.95, batch_size = 32, decay = 0.995):
+        self.env = gym.make('BreakoutDeterministic-v4', render_mode = 'human')
+        # self.env = gym.make('BreakoutDeterministic-v4')
         self.memory = deque(maxlen = 2000)
 
         self.num_episodes = num_episodes
@@ -85,6 +89,11 @@ class DQN(object):
             self.model.fit(state, target_fn, epochs = 1, verbose = 0)
 
     def train(self):
+        if os.path.exists('model.h5'):
+            self.model = load_model('model.h5')
+        else:
+            pass
+        
         for e in range(self.num_episodes):
             current_state = self.env.reset()
             current_state = self._preprocess(current_state)
@@ -92,7 +101,8 @@ class DQN(object):
             self.explore_rate = self.get_explore_rate(e)
 
             done = False
-            while not done:
+            for i in range(self.num_steps):
+            # while not done:
                 action = self.choose_action(current_state)
 
                 new_state, reward, done, _ = self.env.step(action)
@@ -105,7 +115,7 @@ class DQN(object):
             self.update_target_model()
             print('Episode ({:02} / {})'.format(e + 1, self.num_episodes))
 
-            if e + 1 % 100 == 0:
+            if (e + 1) % 100 == 0:
                 self.model.save('model.h5')
 
         self.model.save('model.h5')
@@ -122,11 +132,12 @@ class DQN(object):
         done = False
 
         while not done:
-            self.env.render()
+            # self.env.render()
             action = self.choose_action(current_state)
             new_state, reward, done, _ = self.env.step(action)
             new_state = self._preprocess(new_state)
             current_state = new_state
+            time.sleep(.01)
 
 
 agent = DQN()
